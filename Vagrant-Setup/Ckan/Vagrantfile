@@ -120,9 +120,9 @@ Vagrant.configure("2") do |config|
   sudo -Hiu postgres psql -l
   #sudo su - postgres 
   #createdb ckan_default
-  psql -U postgres -h localhost -c "CREATE ROLE ckan_default WITH LOGIN PASSWORD 'ckan_default';"
+  psql -U postgres -h localhost -c "CREATE ROLE ckan_default WITH LOGIN PASSWORD 'password';"
   psql -U postgres -h localhost -c "CREATE DATABASE ckan_default;"
-  psql -U postgres -h localhost -c "CREATE USER ckan_default WITH PASSWORD 'ckan_default';"
+  psql -U postgres -h localhost -c "CREATE USER ckan_default WITH PASSWORD 'password';"
   psql -U postgres --no-password -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE ckan_default TO ckan_default;"
   #Checking if roles and databases were made, and with appropriate measures.
   sudo -Hiu postgres psql -l
@@ -147,20 +147,31 @@ Vagrant.configure("2") do |config|
   sudo systemctl restart nginx
   SCRIPT
 
-  puts "Input the name of the Ckan User: "
+  puts "Input the name of the Ckan User(enter none if you are done with this step): "
   input = STDIN.gets.chomp 
   $CkanAdminSetup = <<-SCRIPT
-
-  read name
-  echo "Hello, $name"
   
   #Setting up Ckan SysAdmin User
-  sudo ckan -c /etc/ckan/default/ckan.ini user add #{input} password=password email=#{input}@localhost 
+  if [ #{input} != none ]; then
+    sudo ckan -c /etc/ckan/default/ckan.ini user add #{input} password=password email=#{input}@localhost 
 
-  sudo ckan -c /etc/ckan/default/ckan.ini sysadmin add #{input} email=#{input}@localhost password=password name=#{input}
-  
+    sudo ckan -c /etc/ckan/default/ckan.ini sysadmin add #{input} email=#{input}@localhost password=password name=#{input}
+  fi 
+
   # Enabling Datastore Extension 
-  #sudo -u postgres createdb -O ckan_default datastore_default -E utf-8
+  psql -U postgres -h localhost -c "CREATE USER datastore_default WITH LOGIN PASSWORD 'password';"
+  sudo -u postgres createdb -O ckan_default datastore_default -E utf-8
+    
+  sudo -Hiu postgres psql -l
+
+  sudo sed '122!d' /etc/ckan/default/ckan.ini | grep datastore 
+  echo $?
+  if [ $? = 1 ]; then
+  sudo sed -i '122s|$| datastore datapusher|' /etc/ckan/default/ckan.ini
+  fi 
+
+
+
   SCRIPT
 
 
@@ -172,8 +183,6 @@ Vagrant.configure("2") do |config|
   #config.vm.provision :reload
   #config.vm.provision "shell", inline: $RInstall
   #config.vm.provision "shell", path: "setup.sh", privileged: false 
-  config.vm.provision "shell", inline: $CkanInstall 
-  #input = STDIN.gets.chomp
-  #config.vm.provision "shell", inline: "Read line: " && read input && echo "$t" 
+  #config.vm.provision "shell", inline: $CkanInstall 
   config.vm.provision "shell", inline: $CkanAdminSetup 
 end
