@@ -165,7 +165,6 @@ Vagrant.configure("2") do |config|
   sudo -Hiu postgres psql -l
 
   sudo sed '122!d' /etc/ckan/default/ckan.ini | grep datastore 
-  echo $?
   if [ $? = 1 ]; then
   sudo sed -i '122s|$| datastore datapusher|' /etc/ckan/default/ckan.ini
   fi 
