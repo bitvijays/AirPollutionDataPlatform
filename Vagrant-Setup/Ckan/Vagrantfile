@@ -1,0 +1,187 @@
+#-*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  #Install vagrant-disksize to allow resizing the vagrant box disk.
+  unless Vagrant.has_plugin?("vagrant-disksize")
+    raise Vagrant::Errors::VagrantError.new, "vagrant-disksize plugin is missing. Please install by using 'vagrant plugin install vagrant-disksize' and rerun 'vagrant up'"
+  end
+
+  #Install vagrant-reload to allow restarting the vagrant box
+  unless Vagrant.has_plugin?("vagrant-reload")
+    raise Vagrant::Errors::VagrantError.new, "vagrant-reload plugin is missing. Please install by using 'vagrant plugin install vagrant-reload' and rerun 'vagrant up"
+  end
+
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://vagrantcloud.com/search.
+  config.vm.box = "ubuntu/focal64"
+
+  # Set Machine Name
+  config.vm.define "Ckan"
+
+  # Set Host Name
+  config.vm.hostname = "Ckan"
+
+  # Disable automatic box update checking. If you disable this, then
+  # boxes will only be checked for updates when the user runs
+  # `vagrant box outdated`. This is not recommended.
+  # config.vm.box_check_update = false
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine. In the example below,
+  # accessing "localhost:8080" will access port 80 on the guest machine.
+  # NOTE: This will enable public access to the opened port
+  # config.vm.network "forwarded_port", guest: 80, host: 8080
+
+  # Create a forwarded port mapping which allows access to a specific port
+  # within the machine from a port on the host machine and only allow access
+  # via 127.0.0.1 to disable public access
+  # config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+
+  # Create a private network, which allows host-only access to the machine
+  # using a specific IP.
+   config.vm.network "private_network", ip: "192.168.56.101"
+
+  # Create a public network, which generally matched to bridged network.
+  # Bridged networks make the machine appear as another physical device on
+  # your network.
+  # config.vm.network "public_network"
+
+  # Share an additional folder to the guest VM. The first argument is
+  # the path on the host to the actual folder. The second argument is
+  # the path on the guest to mount the folder. And the optional third
+  # argument is a set of non-required options.
+   config.vm.synced_folder ".", "/home/vagrant/Ckan"
+
+  # Disk space setting up using vagrant-disksize
+  config.disksize.size='40GB'
+
+  # Provider-specific configuration so you can fine-tune various
+  # backing providers for Vagrant. These expose provider-specific options.
+  # Example for VirtualBox:
+  #
+   config.vm.provider "virtualbox" do |vb|
+  #   # Display the VirtualBox GUI when booting the machine
+  #   vb.gui = true
+  #
+  #   # Customize the amount of memory on the VM:
+     vb.memory = "2048"
+     vb.customize ["setextradata", :id, "VBoxInternal2/SharedFoldersEnableSymlinksCreate/vagrant","1"]
+  end
+  #
+  # View the documentation for the provider you are using for more
+  # information on available options.
+
+  # Enable provisioning with a shell script. Additional provisioners such as
+  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
+  # documentation for more information about their specific syntax and use.
+  
+  $basicInstall = <<-SCRIPT
+  sudo apt update -y && sudo apt upgrade -y && sudo apt dist-upgrade -y
+  sudo apt install python3-pip -y
+  
+  #Installing Postgresql
+  sudo apt install -y postgresql
+  sudo sed -i '92,103s|md5|trust|g' /etc/postgresql/12/main/pg_hba.conf
+  sudo systemctl restart postgres
+  #Installing Network-Configuration Tools
+  sudo apt install net-tools
+  
+  pip3 install requests ckanapi
+  pip3 install python-dateutil
+  SCRIPT
+
+  $RInstall = <<-SCRIPT
+  sudo touch /etc/apt/sources.list.d/R.list ; echo "deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/" | sudo tee /etc/apt/sources.list.d/R.list
+  sudo apt update -y
+  sudo apt install r-base -y
+  sudo apt install libmysqlclient-dev -y 
+  sudo apt install r-cran-rmysql -y
+  SCRIPT
+
+  $CkanInstall = <<-SCRIPT
+  #Installation of Ckan 2.9: from https://docs.ckan.org/en/2.9/maintaining/installing/install-from-package.html
+  sudo apt update -y && sudo apt upgrade -y
+  sudo apt-get install -y nginx apache2 libapache2-mod-wsgi libpq5 redis-server git-core -y
+  sudo apt install -y libpq5 redis-server nginx supervisor -y
+  wget https://packaging.ckan.org/python-ckan_2.9-py3-focal_amd64.deb
+  sudo dpkg -i *.deb
+  sudo su - postgres 
+  #Configuring Postgres
+  sudo systemctl restart postgres
+  sudo -Hiu postgres psql -l
+  #sudo su - postgres 
+  #createdb ckan_default
+  psql -U postgres -h localhost -c "CREATE ROLE ckan_default WITH LOGIN PASSWORD 'password';"
+  psql -U postgres -h localhost -c "CREATE DATABASE ckan_default;"
+  psql -U postgres -h localhost -c "CREATE USER ckan_default WITH PASSWORD 'password';"
+  psql -U postgres --no-password -h localhost -c "GRANT ALL PRIVILEGES ON DATABASE ckan_default TO ckan_default;"
+  #Checking if roles and databases were made, and with appropriate measures.
+  sudo -Hiu postgres psql -l
+  sudo -u postgres createuser -S -D -R -P ckan_default
+  sudo -u postgres createdb -O ckan_default ckan_default -E utf-8
+    
+  #Installing Solr
+  sudo apt install -y solr-tomcat
+  sudo sed -i 's/Connector port="8080"/Connector port="8983"/g' /etc/tomcat9/server.xml
+  sudo mv /etc/solr/conf/schema.xml /etc/solr/conf/schema.xml.bak
+  sudo ln -s /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml /etc/solr/conf/schema.xml
+  sudo service tomcat9 restart
+  sudo sed -i 's/#solr_url/solr_url/g' /etc/ckan/default/ckan.ini | printf "solr_url set"
+  sudo sed -i 's|ckan.site_url =$|ckan.site_url = https://www.ckan.com|g' /etc/ckan/default/ckan.ini | printf "ckan.site_url set"
+  sudo sed -i '5s|Listen [0-9]*|Listen 8081|g' /etc/apache2/ports.conf
+  sudo ckan db init
+  #Reloading Supervisor daemon
+  sudo supervisorctl reload
+  sudo supervisorctl status
+  #Restart Apache and Nginx
+  sudo systemctl restart apache2
+  sudo systemctl restart nginx
+  SCRIPT
+
+  puts "Input the name of the Ckan User(enter none if you are done with this step): "
+  input = STDIN.gets.chomp 
+  $CkanAdminSetup = <<-SCRIPT
+  
+  #Setting up Ckan SysAdmin User
+  if [ #{input} != none ]; then
+    sudo ckan -c /etc/ckan/default/ckan.ini user add #{input} password=password email=#{input}@localhost 
+
+    sudo ckan -c /etc/ckan/default/ckan.ini sysadmin add #{input} email=#{input}@localhost password=password name=#{input}
+  fi 
+
+  # Enabling Datastore Extension 
+  psql -U postgres -h localhost -c "CREATE USER datastore_default WITH LOGIN PASSWORD 'password';"
+  sudo -u postgres createdb -O ckan_default datastore_default -E utf-8
+    
+  sudo -Hiu postgres psql -l
+
+  sudo sed '122!d' /etc/ckan/default/ckan.ini | grep datastore 
+  if [ $? = 1 ]; then
+  sudo sed -i '122s|$| datastore datapusher|' /etc/ckan/default/ckan.ini
+  fi 
+
+
+
+  SCRIPT
+
+
+  # config.vm.provision "shell", inline: <<-SHELL
+  #   apt-get update
+  #   apt-get install -y apache2
+  # SHELL
+  #config.vm.provision "shell", inline: $basicInstall
+  #config.vm.provision :reload
+  #config.vm.provision "shell", inline: $RInstall
+  #config.vm.provision "shell", path: "setup.sh", privileged: false 
+  #config.vm.provision "shell", inline: $CkanInstall 
+  config.vm.provision "shell", inline: $CkanAdminSetup 
+end

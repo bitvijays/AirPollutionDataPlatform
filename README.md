@@ -19,3 +19,14 @@ Refer [Setup_CKAN](./docs/setup_ckan.md)
 ## Setup Website
 
 Refer [Setup_WebSite](./docs/setup_website.md)
+
+## Setup Through Vagrant
+
+1. Install Vagrant from https://www.vagrantup.com/
+
+2. Install Vagrant plugin " vagrant-disksize" by running 
+ > vagrant plugin install vagrant-disksize
+
+
+
+4. Run Vagrantfiles in Vagrant-Setup/Ckan/Vagrantfile and /Vagrant-Setup/Web/Vagrantfile. 
