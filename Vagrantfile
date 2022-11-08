@@ -189,8 +189,6 @@ Vagrant.configure("2") do |config|
 	      npm install express xss nodemailer ckan point-in-polygon easy-autocomplete jscoord @turf/turf @turf/hex-grid @turf/square-grid @awaitjs/express mustache-express
         SCRIPT
   
-
-
         web.vm.provision "shell", inline:  $rootScript 
         web.vm.provision "shell", inline: $userScript, privileged:false
       end

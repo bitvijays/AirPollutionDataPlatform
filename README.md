@@ -24,9 +24,17 @@ Refer [Setup_WebSite](./docs/setup_website.md)
 
 1. Install Vagrant from https://www.vagrantup.com/
 
-2. Install Vagrant plugin " vagrant-disksize" by running 
- > vagrant plugin install vagrant-disksize
+2. Install Vagrant plugin "vagrant-disksize" and "vagrant-reload" by running 
+ > vagrant plugin install vagrant-disksize 
+ > vagrant plugin install vagrant-reload 
 
+3. Run Vagrantfile in the home folder/.
+ > Vagrant up"  
 
+However, it is suggested to provision both machines separately by typing.
+> vagrant up ckan
 
-4. Run Vagrantfiles in Vagrant-Setup/Ckan/Vagrantfile and /Vagrant-Setup/Web/Vagrantfile. 
+and
+> vagrant up web
+
+4. Perform rest of the configuration, i.e. all other steps other than that of installation of basic services. 
