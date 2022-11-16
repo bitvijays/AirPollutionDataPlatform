@@ -135,20 +135,20 @@ Vagrant.configure("2") do |config|
     $SettingUpProject = <<-SCRIPT
     if [ #{input} != none ]; then
       sudo ckan sysadmin list | grep -n #{input} | cut -d "=" -f 4 | tee > apikey
-      sudo sed -i "4s|def41a89-8b9f-4225-9637-b9a015aa4546|$(cat apikey)|" Ckan/AirPollutionDataPlatform/ckan_data_imports/utility/config.py
+      sudo sed -i "4s|def41a89-8b9f-4225-9637-b9a015aa4546|$(cat apikey)|" Ckan/ckan_data_imports/utility/config.py
       rm apikey
 
       #creating organizations
-      #sed -i -e '149s|#||' -e '151s|create_|#create_|' Ckan/AirPollutionDataPlatform/#ckan_data_imports/init/init_ckan.py
-      #python3 Ckan/AirPollutionDataPlatform/#ckan_data_imports/main.py init
+      #sed -i -e '149s|#||' -e '151s|create_|create_|' Ckan/#ckan_data_imports/init/init_ckan.py
+      #python3 Ckan/ckan_data_imports/main.py init
       
       #creating packages
-      #sed -i -e '150s|#||' -e '149s|create_|#create_|' Ckan/AirPollutionDataPlatform/#ckan_data_imports/init/init_ckan.py
-      #python3 Ckan/AirPollutionDataPlatform/#ckan_data_imports/main.py init
+      #sed -i -e '150s|#||' -e '149s|create_|create_|' Ckan/ckan_data_imports/init/init_ckan.py
+      #python3 Ckan/ckan_data_imports/main.py init
 
       #creating resources
-      #sed -i -e '151s|#||' -e '150s|create_|#create_|' Ckan/AirPollutionDataPlatform/#ckan_data_imports/init/init_ckan.py
-      #python3 Ckan/AirPollutionDataPlatform/#ckan_data_imports/main.py init
+      #sed -i -e '151s|#||' -e '150s|create_|create_|' Ckan/ckan_data_imports/init/init_ckan.py
+      #python3 Ckan/#ckan_data_imports/main.py init
 
     fi  
     SCRIPT
